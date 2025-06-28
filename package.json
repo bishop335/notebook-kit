@@ -17,7 +17,7 @@
     "lint": "tsc --noEmit && eslint bin src types",
     "notebooks": "tsx bin/notebooks.ts",
     "download": "tsx bin/notebooks.ts download",
-    "docs:preview": "tsx bin/notebooks.ts preivew --root docs --template docs/observable.tmpl",
+    "docs:preview": "tsx bin/notebooks.ts preview --root docs --template docs/observable.tmpl",
     "docs:build": "tsx bin/notebooks.ts build --root docs --template docs/observable.tmpl -- docs/*.html"
   },
   "bin": {
