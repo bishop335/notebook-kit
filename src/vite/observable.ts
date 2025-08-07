@@ -5,7 +5,7 @@ import {fileURLToPath} from "node:url";
 import type {TemplateLiteral} from "acorn";
 import {JSDOM} from "jsdom";
 import type {PluginOption, IndexHtmlTransformContext} from "vite";
-import type {Cell} from "../lib/notebook.js";
+import type {Cell, Notebook} from "../lib/notebook.js";
 import {deserialize} from "../lib/serialize.js";
 import {Sourcemap} from "../javascript/sourcemap.js";
 import {transpile} from "../javascript/transpile.js";
@@ -25,6 +25,8 @@ export interface ObservableOptions {
   template?: string;
   /** A function which performs a per-page transformation of the template HTML. */
   transformTemplate?: (template: string, context: IndexHtmlTransformContext) => string | Promise<string>;
+  /** A function which transforms the parsed notebook. */
+  transformNotebook?: (notebook: Notebook, context: IndexHtmlTransformContext) => Notebook | Promise<Notebook>;
 }
 
 export function observable({
@@ -32,7 +34,8 @@ export function observable({
   parser = new window.DOMParser(),
   serializer = new window.XMLSerializer(),
   template = fileURLToPath(import.meta.resolve("../templates/default.html")),
-  transformTemplate = undefined
+  transformTemplate = undefined,
+  transformNotebook = undefined
 }: ObservableOptions = {}): PluginOption {
   return {
     name: "observable",
@@ -47,7 +50,10 @@ export function observable({
     transformIndexHtml: {
       order: "pre",
       async handler(input, context) {
-        const notebook = deserialize(input, {parser});
+        let notebook = deserialize(input, {parser});
+        if (transformNotebook !== undefined) {
+          notebook = await transformNotebook(notebook, context);
+        }
         let tsource = await readFile(template, "utf-8");
         if (transformTemplate !== undefined) {
           tsource = await transformTemplate(tsource, context);
