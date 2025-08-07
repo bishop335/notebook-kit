@@ -14,6 +14,30 @@ import {collectAssets} from "../runtime/stdlib/assets.js";
 import {highlight} from "../runtime/stdlib/highlight.js";
 import {MarkdownRenderer} from "../runtime/stdlib/md.js";
 
+/**
+ * A function which performs a per-page transformation of the template HTML.
+ *
+ * @param source The source of the template (typically HTML).
+ * @param context The Vite plugin context.
+ * @returns The transformed template source HTML.
+ */
+export type TemplateTransform = (
+  source: string,
+  context: IndexHtmlTransformContext
+) => string | Promise<string>;
+
+/**
+ * A function which transforms the parsed notebook.
+ *
+ * @param notebook The current (parsed) notebook.
+ * @param context The Vite plugin context.
+ * @returns The transformed notebook.
+ */
+export type NotebookTransform = (
+  notebook: Notebook,
+  context: IndexHtmlTransformContext
+) => Notebook | Promise<Notebook>;
+
 export interface ObservableOptions {
   /** The global window, for the default parser and serializer implementations. */
   window?: Pick<typeof globalThis, "DOMParser" | "XMLSerializer">;
@@ -23,10 +47,10 @@ export interface ObservableOptions {
   serializer?: XMLSerializer;
   /** The path to the page template; defaults to the default template. */
   template?: string;
-  /** A function which performs a per-page transformation of the template HTML. */
-  transformTemplate?: (template: string, context: IndexHtmlTransformContext) => string | Promise<string>;
-  /** A function which transforms the parsed notebook. */
-  transformNotebook?: (notebook: Notebook, context: IndexHtmlTransformContext) => Notebook | Promise<Notebook>;
+  /** An optional function which transforms the template HTML for the current page. */
+  transformTemplate?: TemplateTransform;
+  /** An optional function which transforms the notebook for the current page. */
+  transformNotebook?: NotebookTransform;
 }
 
 export function observable({
@@ -34,8 +58,8 @@ export function observable({
   parser = new window.DOMParser(),
   serializer = new window.XMLSerializer(),
   template = fileURLToPath(import.meta.resolve("../templates/default.html")),
-  transformTemplate = undefined,
-  transformNotebook = undefined
+  transformTemplate = (template) => template,
+  transformNotebook = (notebook) => notebook
 }: ObservableOptions = {}): PluginOption {
   return {
     name: "observable",
@@ -50,15 +74,9 @@ export function observable({
     transformIndexHtml: {
       order: "pre",
       async handler(input, context) {
-        let notebook = deserialize(input, {parser});
-        if (transformNotebook !== undefined) {
-          notebook = await transformNotebook(notebook, context);
-        }
-        let tsource = await readFile(template, "utf-8");
-        if (transformTemplate !== undefined) {
-          tsource = await transformTemplate(tsource, context);
-        }
-        const document = parser.parseFromString(tsource, "text/html");
+        const notebook = await transformNotebook(deserialize(input, {parser}), context);
+        const templateHtml = await transformTemplate(await readFile(template, "utf-8"), context);
+        const document = parser.parseFromString(templateHtml, "text/html");
         const statics = new Set<Cell>();
         const assets = new Set<string>();
         const md = MarkdownRenderer({document});
