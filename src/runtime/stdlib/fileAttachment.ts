@@ -2,34 +2,52 @@
 const files = new Map<string, FileAttachmentImpl>();
 
 export type DsvOptions = {delimiter?: string; array?: boolean; typed?: boolean};
-export type DsvResult = any[] & {columns: string[]};
+export type DsvResult = (Record<string, any>[] | any[][]) & {columns: string[]};
 
 export interface FileAttachment {
-  name: string;
-  mimeType: string;
+  /** The URL of the file. */
   href: string;
-  lastModified: number | undefined;
-  size: number | undefined;
+  /** The name of the file (not including the path), such as "test.csv". */
+  name: string;
+  /** The MIME type, such as "text/csv". */
+  mimeType: string;
+  /** The time this file was most-recently modified, as milliseconds since epoch, if known. */
+  lastModified?: number;
+  /** The size of this file in bytes, if known. */
+  size?: number;
   /** @deprecated use FileAttachment.href instead */
   url(): Promise<string>;
+  /** Returns the contents of this file as a Blob. */
   blob(): Promise<Blob>;
+  /** Returns the contents of this file as an ArrayBuffer. */
   arrayBuffer(): Promise<ArrayBuffer>;
+  /** Returns the contents of this file as a string with the given encoding. */
   text(encoding?: string): Promise<string>;
+  /** Returns the contents of this file as JSON. */
   json(): Promise<any>;
+  /** Returns a byte stream to the contents of this file. */
   stream(): Promise<ReadableStream<Uint8Array<ArrayBufferLike>>>;
+  /** Returns the contents of this file as delimiter-separated values. */
   dsv(options?: DsvOptions): Promise<DsvResult>;
+  /** Returns the contents of this file as comma-separated values. */
   csv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult>;
+  /** Returns the contents of this file as tab-separated values. */
   tsv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult>;
+  /** Returns the contents of this file as an image. */
   image(props?: Partial<HTMLImageElement>): Promise<HTMLImageElement>;
+  /** Returns the contents of this Arrow IPC file as an Apache Arrow table. */
   arrow(): Promise<any>;
+  /** Returns the contents of this file as an Arquero table. */
   arquero(options?: any): Promise<any>;
+  /** Returns the contents of this Parquet file as an Apache Arrow table. */
   parquet(): Promise<any>;
+  /** Returns the contents of this file as an XML document. */
   xml(mimeType?: DOMParserSupportedType): Promise<Document>;
+  /** Returns the contents of this file as an HTML document. */
   html(): Promise<Document>;
 }
 
-export function FileAttachment(name: string, base = document.baseURI): FileAttachment {
-  if (new.target !== undefined) throw new TypeError("FileAttachment is not a constructor");
+export const FileAttachment = (name: string, base = document.baseURI): FileAttachment => {
   const href = new URL(name, base).href;
   let file = files.get(href);
   if (!file) {
@@ -37,9 +55,9 @@ export function FileAttachment(name: string, base = document.baseURI): FileAttac
     files.set(href, file);
   }
   return file;
-}
+};
 
-async function remote_fetch(file: FileAttachment) {
+async function fetchFile(file: FileAttachment): Promise<Response> {
   const response = await fetch(file.href);
   if (!response.ok) throw new Error(`Unable to load file: ${file.name}`);
   return response;
@@ -51,12 +69,7 @@ export abstract class AbstractFile implements FileAttachment {
   lastModified!: number | undefined;
   size!: number | undefined;
   abstract href: string;
-  constructor(
-    name: string,
-    mimeType = guessMimeType(name),
-    lastModified?: number,
-    size?: number
-  ) {
+  constructor(name: string, mimeType = guessMimeType(name), lastModified?: number, size?: number) {
     Object.defineProperties(this, {
       name: {value: `${name}`, enumerable: true},
       mimeType: {value: `${mimeType}`, enumerable: true},
@@ -68,21 +81,21 @@ export abstract class AbstractFile implements FileAttachment {
     return this.href;
   }
   async blob(): Promise<Blob> {
-    return (await remote_fetch(this)).blob();
+    return (await fetchFile(this)).blob();
   }
   async arrayBuffer(): Promise<ArrayBuffer> {
-    return (await remote_fetch(this)).arrayBuffer();
+    return (await fetchFile(this)).arrayBuffer();
   }
   async text(encoding?: string): Promise<string> {
     return encoding === undefined
-      ? (await remote_fetch(this)).text()
+      ? (await fetchFile(this)).text()
       : new TextDecoder(encoding).decode(await this.arrayBuffer());
   }
   async json(): Promise<any> {
-    return (await remote_fetch(this)).json();
+    return (await fetchFile(this)).json();
   }
   async stream(): Promise<ReadableStream<Uint8Array<ArrayBufferLike>>> {
-    return (await remote_fetch(this)).body!;
+    return (await fetchFile(this)).body!;
   }
   async dsv({delimiter = ",", array = false, typed = false} = {}): Promise<DsvResult> {
     const [text, d3] = await Promise.all([this.text(), import("npm:d3-dsv")]);
@@ -108,7 +121,7 @@ export abstract class AbstractFile implements FileAttachment {
     });
   }
   async arrow(): Promise<any> {
-    const [Arrow, response] = await Promise.all([import("npm:apache-arrow"), remote_fetch(this)]);
+    const [Arrow, response] = await Promise.all([import("npm:apache-arrow"), fetchFile(this)]);
     return Arrow.tableFromIPC(response);
   }
   async arquero(options?: any): Promise<any> {

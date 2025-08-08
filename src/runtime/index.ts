@@ -8,6 +8,11 @@ export * from "./display.js";
 export * from "./inspect.js";
 export * from "./stdlib/index.js";
 
+export type * from "./stdlib/databaseClient.js";
+export type * from "./stdlib/fileAttachment.js";
+export {DatabaseClient} from "./stdlib/databaseClient.js";
+export {FileAttachment} from "./stdlib/fileAttachment.js";
+
 export const runtime = Object.assign(new Runtime({...library, __ojs_runtime: () => runtime}), {fileAttachments});
 export const main = (runtime as typeof runtime & {main: Module}).main = runtime.module();
 
