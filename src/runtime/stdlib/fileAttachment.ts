@@ -10,15 +10,16 @@ export interface FileAttachment {
   href: string;
   lastModified: number | undefined;
   size: number | undefined;
-  url(): Promise<string>; // deprecated! use href
+  /** @deprecated use FileAttachment.href instead */
+  url(): Promise<string>;
   blob(): Promise<Blob>;
   arrayBuffer(): Promise<ArrayBuffer>;
   text(encoding?: string): Promise<string>;
   json(): Promise<any>;
   stream(): Promise<ReadableStream<Uint8Array<ArrayBufferLike>>>;
   dsv(options?: DsvOptions): Promise<DsvResult>;
-  csv(options?: Exclude<DsvOptions, "delimiter">): Promise<DsvResult>;
-  tsv(options?: Exclude<DsvOptions, "delimiter">): Promise<DsvResult>;
+  csv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult>;
+  tsv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult>;
   image(props?: Partial<HTMLImageElement>): Promise<HTMLImageElement>;
   arrow(): Promise<any>;
   arquero(options?: any): Promise<any>;
@@ -89,10 +90,10 @@ export abstract class AbstractFile implements FileAttachment {
     const parse = array ? format.parseRows : format.parse;
     return parse(text, typed && d3.autoType);
   }
-  async csv(options: Exclude<DsvOptions, "delimiter">): Promise<DsvResult> {
+  async csv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult> {
     return this.dsv({...options, delimiter: ","});
   }
-  async tsv(options: Exclude<DsvOptions, "delimiter">): Promise<DsvResult> {
+  async tsv(options?: Omit<DsvOptions, "delimiter">): Promise<DsvResult> {
     return this.dsv({...options, delimiter: "\t"});
   }
   async image(props?: Partial<HTMLImageElement>): Promise<HTMLImageElement> {
