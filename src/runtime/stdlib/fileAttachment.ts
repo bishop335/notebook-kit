@@ -47,6 +47,7 @@ export interface FileAttachment {
   html(): Promise<Document>;
 }
 
+// TODO Enforce that files have been registered; throw error if not found.
 export const FileAttachment = (name: string, base = document.baseURI): FileAttachment => {
   const href = new URL(name, base).href;
   let file = files.get(href);
@@ -56,6 +57,31 @@ export const FileAttachment = (name: string, base = document.baseURI): FileAttac
   }
   return file;
 };
+
+export interface FileInfo {
+  path: string;
+  mimeType?: string;
+  lastModified?: number;
+  size?: number;
+}
+
+export function registerFile(name: string, info: FileInfo, base: string | URL = location.href) {
+  const href = new URL(name, base).href;
+  if (info == null) {
+    files.delete(href);
+  } else {
+    const {path, mimeType, lastModified, size} = info;
+    const file = new FileAttachmentImpl(
+      new URL(path, base).href,
+      name.split("/").pop()!,
+      mimeType,
+      lastModified,
+      size
+    );
+    files.set(href, file);
+    return file;
+  }
+}
 
 async function fetchFile(file: FileAttachment): Promise<Response> {
   const response = await fetch(file.href);
