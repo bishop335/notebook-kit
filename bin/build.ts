@@ -25,6 +25,10 @@ export default async function run(args?: string[]): Promise<void> {
         type: "string",
         default: "./"
       },
+      minify: {
+        type: "boolean",
+        default: true
+      },
       template: {
         type: "string"
       },
@@ -45,6 +49,7 @@ export default async function run(args?: string[]): Promise<void> {
   --template <path>        path to the HTML template
   -o, --out <dir>          path to the output directory (relative to root)
   --base <path>            serving base path; defaults to ./
+  --no-minify              disable JS/CSS minification
   --empty                  whether to empty the output directory before building
   -h, --help               show this message
 `);
@@ -57,6 +62,8 @@ export default async function run(args?: string[]): Promise<void> {
     root: values.root,
     base: values.base,
     build: {
+      minify: values.minify ? "esbuild" : false,
+      cssMinify: values.minify ? "esbuild" : false,
       outDir: values.out,
       emptyOutDir: values.empty,
       rollupOptions: {
