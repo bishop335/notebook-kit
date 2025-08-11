@@ -131,7 +131,7 @@ export function observable({
           `<style type="text/css">
 @import url("observable:styles/theme-${notebook.theme}.css");
 </style><script type="module">
-import {define} from "observable:runtime/define";${Array.from(assets)
+import {define} from "observable:runtime";${Array.from(assets)
             .map(
               (asset, i) => `
 import asset${i + 1} from ${JSON.stringify(`${asset}?url`)};`
