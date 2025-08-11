@@ -1,7 +1,6 @@
-import type {Variable, VariableDefinition} from "@observablehq/runtime";
+import type {Module, Variable, VariableDefinition} from "@observablehq/runtime";
 import type {DisplayState} from "./display.js";
 import {clear, display, observe} from "./display.js";
-import {main} from "./index.js";
 import {input} from "./stdlib/generators/index.js";
 import {Mutator} from "./stdlib/mutable.js";
 
@@ -31,7 +30,7 @@ export type Definition = {
   assets?: Map<string, string>;
 };
 
-export function define(state: DefineState, definition: Definition, observer = observe): void {
+export function define(main: Module, state: DefineState, definition: Definition, observer = observe): void {
   const {id, body, inputs = [], outputs = [], output, autodisplay, autoview, automutable} = definition;
   const variables = state.variables;
   const v = main.variable(observer(state, definition), {shadow: {}});
