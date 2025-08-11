@@ -39,12 +39,10 @@ export type NotebookTransform = (
 ) => Notebook | Promise<Notebook>;
 
 export interface ObservableOptions {
-  /** The global window, for the default parser and serializer implementations. */
-  window?: Pick<typeof globalThis, "DOMParser" | "XMLSerializer">;
+  /** The global window, for the default parser implementations. */
+  window?: Pick<typeof globalThis, "DOMParser">;
   /** The parser implementation; defaults to `new window.DOMParser()`. */
   parser?: DOMParser;
-  /** The serializer implementation; defaults to `new window.XMLSerializer()`. */
-  serializer?: XMLSerializer;
   /** The path to the page template; defaults to the default template. */
   template?: string;
   /** An optional function which transforms the template HTML for the current page. */
@@ -56,7 +54,6 @@ export interface ObservableOptions {
 export function observable({
   window = new JSDOM().window,
   parser = new window.DOMParser(),
-  serializer = new window.XMLSerializer(),
   template = fileURLToPath(import.meta.resolve("../templates/default.html")),
   transformTemplate = (template) => template,
   transformNotebook = (notebook) => notebook
@@ -125,10 +122,11 @@ export function observable({
         // Don’t error if assets are missing (matching Vite’s behavior).
         filterMissingAssets(assets, dirname(context.filename));
 
-        const output = serializer.serializeToString(document);
+        const output = document.documentElement.outerHTML;
         const i = output.indexOf("</body>");
         if (!(i >= 0)) throw new Error("body not found");
         return (
+          `<!doctype html>` +
           output.slice(0, i) +
           `<style type="text/css">
 @import url("observable:styles/theme-${notebook.theme}.css");
