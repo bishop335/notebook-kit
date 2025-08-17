@@ -15,7 +15,11 @@ test("converts a cell spec to a cell", () => {
     id: 1,
     value: "",
     mode: "js",
-    pinned: true
+    pinned: true,
+    hidden: false,
+    output: undefined,
+    database: undefined,
+    since: undefined
   });
 });
 
@@ -24,6 +28,10 @@ test("computes an appropriate default pinned based on the cell mode", () => {
     id: 1,
     value: "",
     mode: "md",
-    pinned: false
+    pinned: false,
+    hidden: false,
+    output: undefined,
+    database: undefined,
+    since: undefined
   });
 });

@@ -1,6 +1,8 @@
 import type {Cell} from "../lib/notebook.js";
+import {toCell} from "../lib/notebook.js";
 import {rewriteFileExpressions} from "./files.js";
-import {hasImportDeclaration, rewriteImportDeclarations, rewriteImportExpressions} from "./imports.js";
+import {hasImportDeclaration} from "./imports.js";
+import {rewriteImportDeclarations, rewriteImportExpressions} from "./imports.js";
 import {transpileObservable} from "./observable.js";
 import {parseJavaScript} from "./parse.js";
 import {Sourcemap} from "./sourcemap.js";
@@ -17,9 +19,9 @@ export type TranspiledJavaScript = {
   output?: string;
   /** whether to implicitly display the body value (e.g., an expression) */
   autodisplay?: boolean;
-  /** whether to implicitly derive a view; for ojs compatibility; requires viewof output */
+  /** whether to implicitly derive a view; requires viewof output */
   autoview?: boolean;
-  /** whether to implicitly derive a mutable; for ojs compatibility; requires mutable output */
+  /** whether to implicitly derive a mutable; requires mutable output */
   automutable?: boolean;
 };
 
@@ -30,21 +32,42 @@ export type TranspileOptions = {
   resolveFiles?: boolean;
 };
 
+/** @deprecated */
 export function transpile(
   input: string,
   mode: Cell["mode"],
   options?: TranspileOptions
+): TranspiledJavaScript;
+export function transpile(input: Cell, options?: TranspileOptions): TranspiledJavaScript;
+export function transpile(
+  input: string | Cell,
+  mode?: Cell["mode"] | TranspileOptions,
+  options?: TranspileOptions
 ): TranspiledJavaScript {
-  return mode === "ojs"
-    ? transpileObservable(input, options) // TODO ojs+md etc.
-    : transpileJavaScript(transpileMode(input, mode), options);
-}
-
-function transpileMode(input: string, mode: Exclude<Cell["mode"], "ojs">): string {
-  if (mode === "js") return input;
-  const tag = mode === "tex" ? "tex.block" : mode === "sql" ? "__sql(db, Inputs.table)" : mode; // for now
-  const raw = mode === "html" || mode === "tex" || mode === "dot";
-  return transpileTemplate(input, tag, raw);
+  let cell: Cell;
+  if (typeof input === "string") {
+    mode = mode as Cell["mode"];
+    cell = toCell({id: -1, value: input, mode});
+  } else {
+    options = mode as TranspileOptions | undefined;
+    mode = input.mode;
+    cell = input;
+    input = cell.value;
+  }
+  const transpiled =
+    mode === "ojs"
+      ? transpileObservable(input, options)
+      : mode !== "js"
+        ? transpileJavaScript(transpileTemplate(cell), options)
+        : transpileJavaScript(input, options);
+  if (transpiled.output === undefined) transpiled.output = cell.output;
+  if (cell.hidden) transpiled.autodisplay = false;
+  else if (mode !== "js" && mode !== "ojs") {
+    transpiled.autodisplay = !!input;
+    transpiled.autoview = mode === "sql" && transpiled.autodisplay && !!transpiled.output;
+    if (transpiled.autoview) transpiled.output = `viewof$${transpiled.output}`;
+  }
+  return transpiled;
 }
 
 export function transpileJavaScript(

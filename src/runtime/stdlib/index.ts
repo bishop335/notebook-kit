@@ -7,7 +7,6 @@ import {Observer} from "./observer.js";
 import * as recommendedLibraries from "./recommendedLibraries.js";
 import {require} from "./require.js";
 import * as sampleDatasets from "./sampleDatasets.js";
-import {__sql} from "./sql.js";
 
 export const root = document.querySelector("main") ?? document.body;
 
@@ -20,7 +19,6 @@ export const library = {
   Mutable: () => Mutable,
   DOM: () => DOM, // deprecated!
   require: () => require, // deprecated!
-  __sql: () => __sql,
   __ojs_observer: () => () => new Observer(),
   ...recommendedLibraries,
   ...sampleDatasets

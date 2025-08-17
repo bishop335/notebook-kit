@@ -9,6 +9,7 @@ return (
 )
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -25,6 +26,7 @@ x + y
     "x",
     "y",
   ],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -40,6 +42,7 @@ await z
   "inputs": [
     "z",
   ],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -55,6 +58,7 @@ display(1), display(2)
   "inputs": [
     "display",
   ],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -67,6 +71,7 @@ const x = 1, y = 2;
 return {x,y};
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [
     "x",
     "y",
@@ -84,6 +89,7 @@ x + y;
     "x",
     "y",
   ],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -97,6 +103,7 @@ await z;
   "inputs": [
     "z",
   ],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -124,6 +131,7 @@ return {figure,rotation,viewof$rotation};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "figure",
     "rotation",
@@ -155,6 +163,7 @@ return {figure,rot,viewof$rot};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "figure",
     "rot",
@@ -171,9 +180,74 @@ const d3 = await import("https://cdn.jsdelivr.net/npm/d3/+esm");
 return {d3};
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [
     "d3",
   ],
+}
+`;
+
+exports[`transpiles empty cells 1`] = `
+{
+  "autodisplay": false,
+  "body": "() => {
+
+}",
+  "inputs": [],
+  "output": undefined,
+  "outputs": [],
+}
+`;
+
+exports[`transpiles empty cells 2`] = `
+{
+  "autodisplay": false,
+  "autoview": false,
+  "body": "() => {
+
+}",
+  "inputs": [],
+  "output": undefined,
+  "outputs": [],
+}
+`;
+
+exports[`transpiles empty cells 3`] = `
+{
+  "autodisplay": false,
+  "autoview": false,
+  "body": "() => {
+
+}",
+  "inputs": [],
+  "output": undefined,
+  "outputs": [],
+}
+`;
+
+exports[`transpiles empty cells 4`] = `
+{
+  "autodisplay": false,
+  "autoview": false,
+  "body": "() => {
+
+}",
+  "inputs": [],
+  "output": undefined,
+  "outputs": [],
+}
+`;
+
+exports[`transpiles empty cells 5`] = `
+{
+  "autodisplay": false,
+  "autoview": false,
+  "body": "() => {
+
+}",
+  "inputs": [],
+  "output": undefined,
+  "outputs": [],
 }
 `;
 
@@ -186,6 +260,7 @@ return (
 )
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -199,6 +274,7 @@ new URL("./test", document.baseURI).href
 )
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -212,6 +288,7 @@ return (
 )
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -235,6 +312,7 @@ return {Scrubber};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "Scrubber",
   ],
@@ -260,6 +338,7 @@ return {viewof$rotation};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "viewof$rotation",
   ],
@@ -275,6 +354,7 @@ const d3 = await import("https://cdn.jsdelivr.net/npm/d3/+esm");
 return {d3};
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [
     "d3",
   ],
@@ -293,6 +373,7 @@ const {default: _} = await import("https://cdn.jsdelivr.net/npm/lodash/+esm").th
 return {_};
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [
     "_",
   ],
@@ -307,6 +388,7 @@ const [{}, {}] = await Promise.all([import("https://cdn.jsdelivr.net/npm/d3/+esm
 
 }",
   "inputs": [],
+  "output": undefined,
   "outputs": [],
 }
 `;
@@ -330,6 +412,7 @@ return {Scrubber};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "Scrubber",
   ],
@@ -355,6 +438,7 @@ return {viewof$rotation};
     "__ojs_runtime",
     "__ojs_observer",
   ],
+  "output": undefined,
   "outputs": [
     "viewof$rotation",
   ],

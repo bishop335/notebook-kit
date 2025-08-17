@@ -40,12 +40,22 @@ export interface CellSpec {
   mode?: "js" | "ojs" | "md" | "html" | "tex" | "dot" | "sql";
   /** if true, the editor will stay open when not focused; defaults to false */
   pinned?: boolean;
+  /** if true, implicit display will be suppressed; defaults to false */
+  hidden?: boolean;
+  /** if present, exposes the cell’s value to the rest of the notebook */
+  output?: string;
+  /** for SQL cells, the database to query; use var:<name> to refer to a variable */
+  database?: string;
+  /** for SQL cells, the oldest allowable age of the cached query result */
+  since?: Date | string | number;
 }
 
 export interface Cell extends CellSpec {
   value: NonNullable<CellSpec["value"]>;
   mode: NonNullable<CellSpec["mode"]>;
   pinned: NonNullable<CellSpec["pinned"]>;
+  hidden: NonNullable<CellSpec["hidden"]>;
+  since?: Date;
 }
 
 export function toNotebook({
@@ -66,16 +76,28 @@ export function toCell({
   id,
   value = "",
   mode = "js",
-  pinned = defaultPinned(mode)
+  pinned = defaultPinned(mode),
+  hidden = false,
+  output,
+  database = mode === "sql" ? "var:db" : undefined,
+  since
 }: CellSpec): Cell {
   return {
     id,
     value,
     mode,
-    pinned
+    pinned,
+    hidden,
+    output,
+    database: mode === "sql" ? database : undefined,
+    since: since !== undefined ? asDate(since) : undefined
   };
 }
 
+function asDate(date: Date | string | number): Date {
+  return date instanceof Date ? date : new Date(date);
+}
+
 export function defaultPinned(mode: Cell["mode"]): boolean {
-  return mode === "js" || mode === "ojs";
+  return mode === "js" || mode === "sql" || mode === "ojs";
 }

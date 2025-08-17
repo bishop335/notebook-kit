@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type {SerializableQueryResult} from "../../databases/index.js";
 
 /** A serializable value that can be interpolated into a query. */
 export type QueryParam = any;
@@ -27,21 +28,14 @@ export interface ColumnSchema {
 }
 
 export interface QueryOptionsSpec {
-  /**
-   * If specified, query results are at least as fresh as the specified date.
-   * If null, results are as fresh as possible (never pulled from the cache).
-   */
-  since?: Date | string | number | null;
-  /**
-   * If specified, query results must be younger than the specified number of seconds.
-   * If null, results are as fresh as possible (never pulled from the cache).
-   */
-  maxAge?: number | null;
+  /** if present, the id of the cell that owns this database client */
+  id?: number;
+  /** if present, query results are at least as fresh as the specified date */
+  since?: Date | string | number;
 }
 
 export interface QueryOptions extends QueryOptionsSpec {
-  since?: Date | null;
-  maxAge?: number | null;
+  since?: Date;
 }
 
 export interface DatabaseClient {
@@ -52,13 +46,13 @@ export interface DatabaseClient {
 
 export const DatabaseClient = (name: string, options?: QueryOptionsSpec): DatabaseClient => {
   if (!/^[\w-]+$/.test(name)) throw new Error(`invalid database: ${name}`);
-  return new DatabaseClientImpl(name, normalizeQueryOptions(options));
+  return new DatabaseClientImpl(name, normalizeOptions(options));
 };
 
-function normalizeQueryOptions({since, maxAge}: QueryOptionsSpec = {}): QueryOptions {
+function normalizeOptions({id, since}: QueryOptionsSpec = {}): QueryOptions {
   const options: QueryOptions = {};
-  if (since !== undefined) options.since = since == null ? since : new Date(since);
-  if (maxAge !== undefined) options.maxAge = maxAge == null ? maxAge : Number(maxAge);
+  if (id !== undefined) options.id = id;
+  if (since !== undefined) options.since = new Date(since);
   return options;
 }
 
@@ -72,14 +66,10 @@ class DatabaseClientImpl implements DatabaseClient {
     });
   }
   async sql(strings: string[], ...params: QueryParam[]): Promise<QueryResult> {
-    const path = `.observable/cache/${this.name}/${await hash(strings, ...params)}.json`;
+    const path = `.observable/cache/${this.name}-${await hash(strings, ...params)}.json`;
     const response = await fetch(path);
     if (!response.ok) throw new Error(`failed to fetch: ${path}`);
-    const {rows, schema, date} = await response.json();
-    rows.schema = schema;
-    rows.date = new Date(date);
-    revive(rows);
-    return rows;
+    return await response.json().then(revive);
   }
 }
 
@@ -87,16 +77,17 @@ async function hash(strings: string[], ...params: unknown[]): Promise<string> {
   const encoded = new TextEncoder().encode(JSON.stringify([strings, ...params]));
   const buffer = await crypto.subtle.digest("SHA-256", encoded);
   const int = new Uint8Array(buffer).reduce((i, byte) => (i << 8n) | BigInt(byte), 0n);
-  return int.toString(36).padStart(24, "0").slice(0, 24);
+  const length = 16;
+  return int.toString(36).padStart(length, "0").slice(0, length);
 }
 
-function revive(rows: QueryResult): void {
-  for (const column of rows.schema) {
+function revive({rows, schema, date, ...meta}: SerializableQueryResult): QueryResult {
+  for (const column of schema) {
     switch (column.type) {
       case "bigint": {
         const {name} = column;
         for (const row of rows) {
-          const value = row[name];
+          const value = row[name] as string | null;
           if (value == null) continue;
           row[name] = BigInt(value);
         }
@@ -105,7 +96,7 @@ function revive(rows: QueryResult): void {
       case "date": {
         const {name} = column;
         for (const row of rows) {
-          const value = row[name];
+          const value = row[name] as string | null;
           if (value == null) continue;
           row[name] = new Date(value);
         }
@@ -113,6 +104,8 @@ function revive(rows: QueryResult): void {
       }
     }
   }
+  if (date != null) date = new Date(date);
+  return Object.assign(rows, {schema, date}, meta);
 }
 
 DatabaseClient.hash = hash;

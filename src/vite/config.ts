@@ -8,6 +8,7 @@ const __dirname = dirname(__filename);
 export function config(): UserConfig {
   return {
     base: "./",
+    appType: "mpa", // return 404 for missing pages
     esbuild: {
       supported: {
         "top-level-await": true

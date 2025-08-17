@@ -8,6 +8,14 @@ it("transpiles JavaScript expressions", () => {
   expect(transpile("display(1), display(2)", "js")).toMatchSnapshot();
 });
 
+it("transpiles empty cells", () => {
+  expect(transpile("", "js")).toMatchSnapshot();
+  expect(transpile("", "md")).toMatchSnapshot();
+  expect(transpile("", "html")).toMatchSnapshot();
+  expect(transpile("", "tex")).toMatchSnapshot();
+  expect(transpile("", "sql")).toMatchSnapshot();
+});
+
 it("transpiles JavaScript programs", () => {
   expect(transpile("const x = 1, y = 2;", "js")).toMatchSnapshot();
   expect(transpile("x + y;", "js")).toMatchSnapshot();

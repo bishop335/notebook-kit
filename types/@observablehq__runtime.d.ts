@@ -21,7 +21,7 @@ declare module "@observablehq/runtime" {
     _resolve(name: string): Variable;
     variable(observer?: ObserverOption, options?: VariableOptions): Variable;
     define(inputs: string[], definition: VariableDefinition): Variable;
-    define(name: string, inputs: string[], definition: VariableDefinition): Variable;
+    define(name: string | null, inputs: string[], definition: VariableDefinition): Variable;
   }
   export class Variable {
     _module: Module;

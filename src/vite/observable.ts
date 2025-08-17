@@ -1,16 +1,20 @@
-import {existsSync} from "node:fs";
-import {readFile} from "node:fs/promises";
+import {createReadStream, existsSync} from "node:fs";
+import {mkdir, readFile, writeFile} from "node:fs/promises";
+import {json} from "node:stream/consumers";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import type {TemplateLiteral} from "acorn";
 import {JSDOM} from "jsdom";
 import type {PluginOption, IndexHtmlTransformContext} from "vite";
+import type {DatabaseConfig} from "../databases/index.js";
+import {getDatabase} from "../databases/index.js";
 import type {Cell, Notebook} from "../lib/notebook.js";
 import {deserialize} from "../lib/serialize.js";
 import {Sourcemap} from "../javascript/sourcemap.js";
 import {transpile} from "../javascript/transpile.js";
 import {parseTemplate} from "../javascript/template.js";
 import {collectAssets} from "../runtime/stdlib/assets.js";
+import {DatabaseClient} from "../runtime/stdlib/databaseClient.js";
 import {highlight} from "../runtime/stdlib/highlight.js";
 import {MarkdownRenderer} from "../runtime/stdlib/md.js";
 
@@ -91,22 +95,48 @@ export function observable({
         let cells = document.querySelector("main");
         cells ??= document.body.appendChild(document.createElement("main"));
         for (const cell of notebook.cells) {
-          const {id, mode, pinned, value} = cell;
+          const {id, mode, pinned, hidden, value} = cell;
           const contents = document.createDocumentFragment();
           const div = contents.appendChild(document.createElement("div"));
           div.id = `cell-${id}`;
           div.className = "observablehq observablehq--cell";
-          if (mode === "md") {
+          if (mode === "md" && !hidden) {
             const template = parseTemplate(value);
-            if (!template.expressions.length) statics.add(cell);
+            if (!template.expressions.length && !cell.output) statics.add(cell);
             const content = md([stripExpressions(template, value)]);
             const codes = content.querySelectorAll<HTMLElement>("code[class^=language-]");
             await Promise.all(Array.from(codes, highlight));
             div.appendChild(content);
-          } else if (mode === "html") {
+          } else if (mode === "html" && !hidden) {
             const template = parseTemplate(value);
-            if (!template.expressions.length) statics.add(cell);
+            if (!template.expressions.length && !cell.output) statics.add(cell);
             div.innerHTML = stripExpressions(template, value);
+          } else if (mode === "sql" && cell.database && !cell.database.startsWith("var:")) {
+            const template = parseTemplate(value);
+            if (!template.expressions.length) {
+              const dir = dirname(context.filename);
+              const cacheDir = join(dir, ".observable", "cache");
+              const hash = await DatabaseClient.hash.call(null, [value]);
+              const cacheName = `${cell.database}-${hash}.json`;
+              const cachePath = join(cacheDir, cacheName);
+              if (!existsSync(cachePath)) {
+                try {
+                  const configPath = join(dir, ".observable", "databases.json");
+                  const configStream = createReadStream(configPath, "utf-8");
+                  const configs = (await json(configStream)) as Record<string, DatabaseConfig>;
+                  const config = configs[cell.database];
+                  if (!config) throw new Error(`database not found: ${cell.database}`);
+                  const database = await getDatabase(config);
+                  const results = await database.call(null, [value]);
+                  await mkdir(cacheDir, {recursive: true});
+                  await writeFile(cachePath, JSON.stringify(results));
+                } catch (error) {
+                  console.error(error);
+                }
+              }
+              cell.mode = "js";
+              cell.value = `FileAttachment(${JSON.stringify(`.observable/cache/${cacheName}`)}).json().then(DatabaseClient.revive)${hidden ? "" : `.then(Inputs.table)${cell.output ? ".then(view)" : ""}`}`;
+            }
           }
           collectAssets(assets, div);
           if (pinned) {
@@ -150,7 +180,7 @@ ${Array.from(assets)
 ${notebook.cells
   .filter((cell) => !statics.has(cell))
   .map((cell) => {
-    const transpiled = transpile(cell.value, cell.mode, {resolveFiles: true});
+    const transpiled = transpile(cell, {resolveFiles: true});
     return `
 define(
   {

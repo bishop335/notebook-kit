@@ -1,5 +1,6 @@
 import type {Node, ParserImpl, TemplateElement, TemplateLiteral} from "acorn";
 import {TokContext, tokTypes as tt, Parser, Options} from "acorn";
+import type {Cell} from "../lib/notebook.js";
 import {acornOptions} from "./parse.js";
 import {Sourcemap} from "./sourcemap.js";
 
@@ -74,7 +75,17 @@ export function parseTemplate(input: string): TemplateLiteral {
   return TemplateCellParser.parse(input, acornOptions) as Node as TemplateLiteral;
 }
 
-export function transpileTemplate(input: string, tag = "", raw = false): string {
+/** @deprecated */
+export function transpileTemplate(input: string, tag?: string, raw?: boolean): string;
+export function transpileTemplate(cell: Cell): string;
+export function transpileTemplate(input: string | Cell, tag = "", raw = false): string {
+  let cell: Cell | undefined;
+  if (typeof input !== "string") {
+    cell = input;
+    input = cell.value;
+    tag = cell.mode === "tex" ? "tex.block" : cell.mode === "sql" ? getSqlTag(cell) : cell.mode;
+    raw = cell.mode !== "md";
+  }
   if (!input) return input;
   const source = new Sourcemap(input);
   const node = parseTemplate(input);
@@ -82,7 +93,16 @@ export function transpileTemplate(input: string, tag = "", raw = false): string 
   source.insertLeft(node.start, "`");
   source.insertRight(node.end, "`");
   source.insertLeft(node.start, tag);
-  return String(source);
+  let output = String(source);
+  if (cell?.mode === "sql" && !cell.hidden) output += ".then(Inputs.table)";
+  return output;
+}
+
+function getSqlTag(cell: Cell): string {
+  const {id, database = "var:db", since} = cell;
+  return database.startsWith("var:")
+    ? `${database.slice("var:".length)}.sql`
+    : `DatabaseClient(${JSON.stringify(database)}, {id: ${id}${since === undefined ? "" : `, since: ${JSON.stringify(since)}`}}).sql`;
 }
 
 function escapeTemplateElements(source: Sourcemap, node: TemplateLiteral): void {

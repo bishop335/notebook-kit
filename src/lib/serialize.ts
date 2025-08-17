@@ -17,6 +17,9 @@ export function serialize(notebook: Notebook, {document = globalThis.document} =
     _cell.type = serializeMode(cell.mode);
     _cell.textContent = indent(cell.value.replace(/<(?=\\*\/script(\s|>))/gi, "<\\"));
     if (cell.pinned) _cell.setAttribute("pinned", "");
+    if (cell.hidden) _cell.setAttribute("hidden", "");
+    if (cell.database) _cell.setAttribute("database", cell.database);
+    if (cell.output) _cell.setAttribute("output", cell.output);
     _notebook.appendChild(_cell);
   }
   _notebook.appendChild(document.createTextNode("\n"));
@@ -38,10 +41,13 @@ export function deserialize(data: string, {parser = new DOMParser()} = {}): Note
       if (!isFinite(id) || !(id > 0) || cellIds.has(id)) id = ++maxCellId;
       else if (id > maxCellId) maxCellId = id;
       cellIds.add(id);
-      const pinned = cell.hasAttribute("pinned");
-      const value = dedent(cell.textContent?.replace(/<\\(?=\\*\/script(\s|>))/gi, "<") ?? "");
       const mode = deserializeMode(cell.getAttribute("type"));
-      return {id, pinned, mode, value};
+      const value = dedent(cell.textContent?.replace(/<\\(?=\\*\/script(\s|>))/gi, "<") ?? "");
+      const pinned = cell.hasAttribute("pinned");
+      const hidden = cell.hasAttribute("hidden");
+      const output = cell.getAttribute("output") ?? undefined;
+      const database = cell.getAttribute("database") ?? undefined;
+      return {id, mode, value, pinned, hidden, output, database};
     }
   );
   return toNotebook({title, theme, readOnly, cells});
