@@ -17,7 +17,7 @@ export function display(state: DisplayState, value: unknown): void {
 
 function displayNode(state: DisplayState, node: Node): void {
   if (node.nodeType === 11) {
-    let child;
+    let child: ChildNode | null;
     while ((child = node.firstChild)) {
       state.root.appendChild(child);
     }
