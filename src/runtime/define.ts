@@ -35,6 +35,7 @@ export function define(main: Module, state: DefineState, definition: Definition,
   const variables = state.variables;
   const v = main.variable(observer(state, definition), {shadow: {}});
   const vid = output ?? (outputs.length ? `cell ${id}` : null);
+  state.autoclear = true;
   if (inputs.includes("display") || inputs.includes("view")) {
     let displayVersion = -1; // the variable._version of currently-displayed values
     const vd = new (v.constructor as typeof Variable)(2, v._module);

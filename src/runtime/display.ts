@@ -5,6 +5,8 @@ import {mapAssets} from "./stdlib/assets.js";
 export type DisplayState = {
   /** the HTML element in which to render this cell’s display */
   root: HTMLDivElement;
+  /** whether to clear on fulfilled */
+  autoclear?: boolean;
   /** for inspected values, any expanded paths; see getExpanded */
   expanded: (number[][] | undefined)[];
 };
@@ -42,6 +44,7 @@ function isDisplayable(value: unknown, root: HTMLDivElement): value is Node {
 }
 
 export function clear(state: DisplayState): void {
+  state.autoclear = false;
   state.expanded = Array.from(state.root.childNodes, getExpanded);
   while (state.root.lastChild) state.root.lastChild.remove();
 }
@@ -58,9 +61,11 @@ export function observe(state: DisplayState, {autodisplay, assets}: Definition) 
     },
     fulfilled(value: unknown) {
       if (autodisplay) {
-        clear(state);
         if (assets && value instanceof Element) mapAssets(value, assets);
+        clear(state);
         display(state, value);
+      } else if (state.autoclear) {
+        clear(state);
       }
     },
     rejected(error: unknown) {
