@@ -32,11 +32,13 @@ import * as duckdb from "npm:@duckdb/duckdb-wasm";
 const bundles = {
   mvp: {
     mainModule: "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-mvp.wasm",
-    mainWorker: "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-browser-mvp.worker.js"
+    mainWorker:
+      "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-browser-mvp.worker.js"
   },
   eh: {
     mainModule: "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-eh.wasm",
-    mainWorker: "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-browser-eh.worker.js"
+    mainWorker:
+      "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist/duckdb-browser-eh.worker.js"
   }
 };
 const bundle = duckdb.selectBundle(bundles);
@@ -162,6 +164,9 @@ export class DuckDBClient {
 
   static async of(sources = {}, config = {}) {
     const db = await createDuckDB();
+    if (config.query?.castDecimalToDouble === undefined) {
+      config = {...config, query: {...config.query, castDecimalToDouble: true}};
+    }
     if (config.query?.castTimestampToDate === undefined) {
       config = {...config, query: {...config.query, castTimestampToDate: true}};
     }
