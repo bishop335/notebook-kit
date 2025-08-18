@@ -1,0 +1,36 @@
+<!doctype html>
+<notebook theme="slate">
+  <title>Hello, DuckDB</title>
+  <script type="text/markdown">
+    # Hello, DuckDB
+
+    This is a test of the DuckDB database connector. First, let's add two numbers.
+  </script>
+  <script type="application/sql" hidden pinned="" database="duckdb" output="three">
+    SELECT 1 + 2
+  </script>
+  <script type="text/markdown">
+    The result is an array with a single object representing the row returned:
+  </script>
+  <script type="module">
+    three
+  </script>
+  <script type="text/markdown">
+    Now let's read a CSV file and pull out the top ten values.
+  </script>
+  <script type="application/sql" pinned="" database="duckdb" output="alphabet">
+    SELECT * FROM 'ex/data/alphabet.csv' ORDER BY frequency DESC LIMIT 10
+  </script>
+  <script type="text/markdown">
+    Can we put the numbers in a chart?
+  </script>
+  <script type="module" pinned="">
+    Plot.barX(alphabet, {y: "letter", x: "frequency"}).plot()
+  </script>
+  <script type="text/markdown">
+    Can we summarize a large Parquet file?
+  </script>
+  <script type="application/sql" pinned="" database="duckdb">
+    SUMMARIZE 'ex/data/gaia-sample.parquet';
+  </script>
+</notebook>

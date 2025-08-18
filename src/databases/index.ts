@@ -1,6 +1,10 @@
 import type {ColumnSchema, QueryParam} from "../runtime/index.js";
 
-export type DatabaseConfig = SnowflakeConfig | PostgresConfig;
+export type DatabaseConfig = DuckDBConfig | SnowflakeConfig | PostgresConfig;
+
+export type DuckDBConfig = {
+  type: "duckdb";
+};
 
 export type SnowflakeConfig = {
   type: "snowflake";
@@ -23,6 +27,10 @@ export type PostgresConfig = {
   ssl?: boolean;
 };
 
+export type DatabaseContext = {
+  cwd: string;
+};
+
 export type QueryTemplateFunction = (
   strings: string[],
   ...params: QueryParam[]
@@ -35,8 +43,13 @@ export type SerializableQueryResult = {
   date: Date;
 };
 
-export async function getDatabase(config: DatabaseConfig): Promise<QueryTemplateFunction> {
+export async function getDatabase(
+  config: DatabaseConfig,
+  context: DatabaseContext
+): Promise<QueryTemplateFunction> {
   switch (config.type) {
+    case "duckdb":
+      return (await import("./duckdb.js")).default(config, context);
     case "snowflake":
       return (await import("./snowflake.js")).default(config);
     case "postgres":
@@ -44,4 +57,8 @@ export async function getDatabase(config: DatabaseConfig): Promise<QueryTemplate
     default:
       throw new Error(`unsupported database type: ${config["type"]}`);
   }
+}
+
+export function isDefaultDatabase(name: string): name is "postgres" | "duckdb" {
+  return name === "postgres" || name === "duckdb";
 }

@@ -7,7 +7,8 @@ import type {TemplateLiteral} from "acorn";
 import {JSDOM} from "jsdom";
 import type {PluginOption, IndexHtmlTransformContext} from "vite";
 import type {DatabaseConfig} from "../databases/index.js";
-import {getDatabase} from "../databases/index.js";
+import {getDatabase, isDefaultDatabase} from "../databases/index.js";
+import {isEnoent} from "../lib/error.js";
 import type {Cell, Notebook} from "../lib/notebook.js";
 import {deserialize} from "../lib/serialize.js";
 import {Sourcemap} from "../javascript/sourcemap.js";
@@ -120,13 +121,19 @@ export function observable({
               const cacheName = `${cell.database}-${hash}.json`;
               const cachePath = join(cacheDir, cacheName);
               if (!existsSync(cachePath)) {
+                let config: DatabaseConfig | undefined;
                 try {
                   const configPath = join(dir, ".observable", "databases.json");
                   const configStream = createReadStream(configPath, "utf-8");
                   const configs = (await json(configStream)) as Record<string, DatabaseConfig>;
-                  const config = configs[cell.database];
-                  if (!config) throw new Error(`database not found: ${cell.database}`);
-                  const database = await getDatabase(config);
+                  config = configs[cell.database];
+                } catch (error) {
+                  if (!isEnoent(error)) throw error;
+                }
+                if (isDefaultDatabase(cell.database)) config ??= {type: cell.database};
+                if (!config) throw new Error(`database not found: ${cell.database}`);
+                try {
+                  const database = await getDatabase(config, {cwd: dir});
                   const results = await database.call(null, [value]);
                   await mkdir(cacheDir, {recursive: true});
                   await writeFile(cachePath, JSON.stringify(results));
