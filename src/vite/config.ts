@@ -20,7 +20,7 @@ export function config(): UserConfig {
         {
           find: /^(npm:.*)$/,
           replacement: "$1",
-          customResolver: resolveNpmImport
+          customResolver: (source) => ({id: resolveNpmImport(source), external: true})
         },
         {
           find: /^jsr:(.*)$/,
