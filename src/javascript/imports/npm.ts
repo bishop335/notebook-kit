@@ -39,6 +39,8 @@ function getDefaultRange(name: string): string {
   switch (name) {
     case "@duckdb/duckdb-wasm":
       return "@1.29.0"; // https://github.com/duckdb/duckdb-wasm/issues/1994
+    case "apache-arrow":
+      return "@17.0.0"; // to match @duckdb/duckdb-wasm 1.29.0
     default:
       return "";
   }

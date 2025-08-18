@@ -1,6 +1,7 @@
 import {dirname, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import type {UserConfig} from "vite";
+import {resolveNpmImport} from "../javascript/imports/npm.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,8 +18,9 @@ export function config(): UserConfig {
     resolve: {
       alias: [
         {
-          find: /^npm:(.*)$/,
-          replacement: "https://cdn.jsdelivr.net/npm/$1/+esm"
+          find: /^(npm:.*)$/,
+          replacement: "$1",
+          customResolver: resolveNpmImport
         },
         {
           find: /^jsr:(.*)$/,
