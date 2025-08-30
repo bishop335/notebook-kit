@@ -1,4 +1,4 @@
-# Observable Notebook Kit
+# Observable Notebook Kit v01.
 
 **Observable Notebook Kit** is an open-source command-line tool for building static sites from Observable Notebooks based on an open file format. Notebook Kit also includes a Vite plugin and a low-level JavaScript interface for deep integration of Observable Notebooks with custom web applications.
 
